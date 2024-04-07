@@ -54,7 +54,7 @@ const CreateCourseForm = (props: Props) => {
       onSuccess: ({course_id}) => {
         toast({
           title: "Success",
-          description: "Course reated successfully",
+          description: "Course created successfully",
         });
         router.push(`/create/${course_id}`);
       },
