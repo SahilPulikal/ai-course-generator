@@ -27,12 +27,14 @@
     "next": "14.0.2",
     "next-auth": "^4.24.5",
     "next-themes": "^0.2.1",
+    "node-html-parser": "^6.1.13",
     "openai": "^3.3.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.48.2",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
+    "youtube-transcript": "github:sinedied/youtube-transcript#a10a073ac325b3b88018f321fa1bc5d62fa69b1c",
     "zod": "^3.22.4"
   },
   "devDependencies": {

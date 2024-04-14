@@ -19,7 +19,9 @@ const ChapterCard = React.forwardRef<ChapterCardHandler, Props>(
     const [success, setSuccess] = React.useState<boolean | null>(null);
     const { mutate: getChapterInfo, isPending } = useMutation({
       mutationFn: async () => {
-        const response = await axios.post("/api/chapter/getInfo");
+        const response = await axios.post("/api/chapter/getInfo", {
+          chapterId: chapter.id,
+        });
         return response.data;
       },
     });
