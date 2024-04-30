@@ -17,11 +17,11 @@ import { useToast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 import SubscriptionAction from "./SubscriptionAction";
 
-type Props = {};
+type Props = { isPro: boolean };
 
 type Input = z.infer<typeof createChaptersSchema>;
 
-const CreateCourseForm = (props: Props) => {
+const CreateCourseForm = ({ isPro }: Props) => {
   const router = useRouter();
   const { toast } = useToast();
   const { mutate: createChapters, isPending } = useMutation({
@@ -52,7 +52,7 @@ const CreateCourseForm = (props: Props) => {
       return;
     }
     createChapters(data, {
-      onSuccess: ({course_id}) => {
+      onSuccess: ({ course_id }) => {
         toast({
           title: "Success",
           description: "Course created successfully",
@@ -171,7 +171,8 @@ const CreateCourseForm = (props: Props) => {
           </Button>
         </form>
       </Form>
-      <SubscriptionAction />
+      {/* if not Pro member, then show Upgrade button */}
+      {!isPro && <SubscriptionAction />}
     </div>
   );
 };
