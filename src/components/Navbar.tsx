@@ -20,7 +20,7 @@ const Navbar = async (props: Props) => {
         <Link href="/" className="items-center hidden gap-2 sm:flex">
           <p className="rounded-lg  border-black px-2 py-1 text-xl font-bold  transition-all hover:-translate-y-[2px] md:block dark:border-white">
             {/* border-b-4 border-r-4 */}
-            Course Generator
+            Course Generator 
           </p>
         </Link>
         <div className="flex items-center">
