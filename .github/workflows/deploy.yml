@@ -19,7 +19,7 @@ jobs:
           USER_NAME: ${{secrets.USER_NAME}}
 
         run: |
-          echo "Deploying to EC2"
+          echo "Deploying to Google Cloud Compute Engine"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key && chmod 600 private_key
           ssh -o StrictHostKeyChecking=no -i private_key ${{ secrets.USER_NAME }}@${{ secrets.SSH_HOST }} '
           cd /home/sahilpulikal/ai-course-generator &&
