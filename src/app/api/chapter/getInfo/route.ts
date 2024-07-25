@@ -47,14 +47,15 @@ export async function POST(req: Request, res: Response) {
 
     const { summary }: { summary: string } = await strict_output(
       "You are an AI capable of summarising  a youtube transcript",
-      "summarise in 250 words or less and do not talk about the sponsors or anything unrelated to the main topic, also do not introduce what the summary is about.\n" +
+      "summarise in 250 words or less and do not talk about the sponsors or anything unrelated to the main topic, also do not introduce what the summary is about. And do not include special characters, back slashes, and do not highlight any text using double quotation marks symbol and proper json format is required strictly.\n" +
         transcript,
       { summary: "summary of the transcript" }
     );
 
     const questions = await getQuestionsFromTranscript(
       transcript,
-      chapter.name
+      chapter.name,
+      chapter.youtubeSearchQuery
     );
 
     await prisma.question.createMany({

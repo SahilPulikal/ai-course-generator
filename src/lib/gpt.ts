@@ -8,7 +8,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 interface OutputFormat {
-  [key: string]: string | string[] | OutputFormat;
+  [key: string]: string | OutputFormat | OutputFormat[];
 }
 
 export async function strict_output(
@@ -17,7 +17,8 @@ export async function strict_output(
   output_format: OutputFormat,
   default_category: string = "",
   output_value_only: boolean = false,
-  model: string = "gpt-3.5-turbo",
+  // model: string = "gpt-3.5-turbo",
+  model: string = "gpt-4o-mini",
   temperature: number = 1,
   num_tries: number = 3,
   verbose: boolean = false
@@ -34,7 +35,8 @@ export async function strict_output(
 
   for (let i = 0; i < num_tries; i++) {
     let output_format_prompt: string = `\nYou are to output ${
-      list_output && "an array of objects in"
+      // list_output && "an array of objects in"
+      list_output ? "an array of objects in" : ""
     } the following in json format: ${JSON.stringify(
       output_format
     )}. \nDo not put quotation marks or escape character \\ in the output fields.`;
@@ -72,6 +74,16 @@ export async function strict_output(
     // ensure that we don't replace away apostrophes in text
     res = res.replace(/(\w)"(\w)/g, "$1'$2");
 
+    // escape double quotes inside strings to ensure valid JSON
+    res = res.replace(/\\([\s\S])|(")/g, "\\$1$2");
+
+    // Ensure all double quotes within the JSON string are properly escaped
+    res = res.replace(/(?<!\\)"/g, '\\"');
+
+    // Remove any invalid escape sequences and other invalid characters
+    res = res.replace(/\\(["'\\/bfnrt])/g, "\\$1"); // escape valid sequences like double quotes, single quotes, backslashes, and control characters
+    res = res.replace(/\\u([\dA-Fa-f]{4})/g, "\\u$1"); // escape unicode sequences
+
     if (verbose) {
       console.log(
         "System prompt:",
@@ -83,7 +95,10 @@ export async function strict_output(
 
     // try-catch block to ensure output format is adhered to
     try {
-      let output: any = JSON.parse(res);
+      // Remove backslashes before parsing
+      let cleanedRes = res.replace(/\\\"/g, '"');
+      // let output: any = JSON.parse(res);
+      let output: any = JSON.parse(cleanedRes);
 
       if (list_input) {
         if (!Array.isArray(output)) {
@@ -108,19 +123,64 @@ export async function strict_output(
 
           // check that one of the choices given for the list of words is an unknown
           if (Array.isArray(output_format[key])) {
-            const choices = output_format[key] as string[];
-            // ensure output is not a list
-            if (Array.isArray(output[index][key])) {
-              output[index][key] = output[index][key][0];
+            //   const choices = output_format[key] as string[];
+            //   // ensure output is not a list
+            //   // if (Array.isArray(output[index][key])) {
+            //   //   output[index][key] = output[index][key][0];
+            //   // }
+            //   if (typeof output[index][key] !== "string") {
+            //     throw new Error(`${key} is not a string`);
+            //   }
+            //   // output the default category (if any) if GPT is unable to identify the category
+            //   if (!choices.includes(output[index][key]) && default_category) {
+            //     output[index][key] = default_category;
+            //   }
+            //   // if the output is a description format, get only the label
+            //   // if (output[index][key].includes(":")) {
+            //   if (
+            //     typeof output[index][key] === "string" &&
+            //     output[index][key].includes(":")
+            //   ) {
+            //     output[index][key] = output[index][key].split(":")[0];
+            //   }
+            // } else if (
+            //   typeof output_format[key] === "object" &&
+            //   !Array.isArray(output_format[key])
+            // ) {
+            if (!Array.isArray(output[index][key])) {
+              throw new Error(`${key} is not an array`);
             }
-            // output the default category (if any) if GPT is unable to identify the category
-            if (!choices.includes(output[index][key]) && default_category) {
-              output[index][key] = default_category;
+
+            const nestedOutputFormat = output_format[key][0] as OutputFormat;
+
+            for (
+              let nestedIndex = 0;
+              nestedIndex < output[index][key].length;
+              nestedIndex++
+            ) {
+              for (const nestedKey in nestedOutputFormat) {
+                if (!(nestedKey in output[index][key][nestedIndex])) {
+                  throw new Error(`${nestedKey} not in nested json output`);
+                }
+              }
             }
-            // if the output is a description format, get only the label
-            if (output[index][key].includes(":")) {
-              output[index][key] = output[index][key].split(":")[0];
+          } else if (typeof output_format[key] === "object") {
+            if (
+              typeof output[index][key] !== "object" ||
+              Array.isArray(output[index][key])
+            ) {
+              throw new Error(`${key} is not an object`);
             }
+
+            const nestedOutputFormat = output_format[key] as OutputFormat;
+
+            for (const nestedKey in nestedOutputFormat) {
+              if (!(nestedKey in output[index][key])) {
+                throw new Error(`${nestedKey} not in nested json output`);
+              }
+            }
+          } else if (typeof output[index][key] !== "string") {
+            throw new Error(`${key} is not a string`);
           }
         }
 
@@ -136,10 +196,27 @@ export async function strict_output(
 
       return list_input ? output : output[0];
     } catch (e) {
-      error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
-      console.log("An exception occurred:", e);
+      // Type-cast `e` to `Error` to access the `message` property
+
+      const error = e as Error;
+
+      // Add specific error handling for JSON parsing issues
+
+      if (error instanceof SyntaxError) {
+        error_msg = `\n\nInvalid JSON format received. Error message: ${error.message}\nGPT response: ${res}`;
+      } else {
+        error_msg = `\n\nError message: ${error.message}\nGPT response: ${res}`;
+      }
+
+      console.log("An exception occurred:", error);
+
       console.log("Current invalid json format ", res);
     }
+    // catch (e) {
+    //   error_msg = `\n\nResult: ${res}\n\nError message: ${e}`;
+    //   console.log("An exception occurred:", e);
+    //   console.log("Current invalid json format ", res);
+    // }
   }
 
   return [];
